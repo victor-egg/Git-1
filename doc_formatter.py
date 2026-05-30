@@ -55,6 +55,72 @@ class DocFormatter:
         self.is_modified = True
         print("✅ 格式排版与清理完成！")
 
+    def count_words(self):
+        """进阶功能1：文档字数统计"""
+        if self.doc is None:
+            print("❌ 错误：请先读取文档！")
+            return
+        
+        total_chars = 0
+        for para in self.doc.paragraphs:
+            # 统计去除常见空白符（空格、换行、制表符、全角空格）后的有效字符数
+            text = para.text.replace(" ", "").replace("\n", "").replace("\t", "").replace("\u3000", "")
+            total_chars += len(text)
+            
+        print(f"📊 统计结果：文档有效字符总数约为 {total_chars} 字。")
+
+    def custom_format(self):
+        """进阶功能2：自定义正文格式参数"""
+        if self.doc is None:
+            print("❌ 错误：请先读取文档！")
+            return
+            
+        print("\n--- 自定义正文格式设置 ---")
+        font_name = input("请输入正文字体名称（如：黑体、楷体、宋体，直接回车默认宋体）: ").strip()
+        if not font_name:
+            font_name = '宋体'
+            
+        # 异常捕获：防止用户输入非数字导致程序崩溃
+        while True:
+            font_size_str = input("请输入正文字号大小（数字，单位：磅，如：12、14、16，直接回车默认12）: ").strip()
+            if not font_size_str:
+                font_size = 12.0
+                break
+            try:
+                font_size = float(font_size_str)
+                break
+            except ValueError:
+                print("❌ 输入无效，请输入数字！")
+                
+        while True:
+            line_spacing_str = input("请输入固定行距（数字，单位：磅，如：18、20、22，直接回车默认18）: ").strip()
+            if not line_spacing_str:
+                line_spacing = 18.0
+                break
+            try:
+                line_spacing = float(line_spacing_str)
+                break
+            except ValueError:
+                print("❌ 输入无效，请输入数字！")
+                
+        print(f"⏳ 正在应用自定义格式：{font_name}，{font_size}磅，行距{line_spacing}磅...")
+        
+        for para in self.doc.paragraphs:
+            if not para.text.strip():
+                continue  # 跳过空段落
+                
+            para.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+            para.paragraph_format.line_spacing = Pt(line_spacing)
+            
+            for run in para.runs:
+                run.font.name = font_name
+                run.font.size = Pt(font_size)
+                # 强制绑定中文字体属性，确保在Word中正确生效
+                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+                
+        self.is_modified = True
+        print("✅ 自定义格式应用完成！")
+
     def save_document(self):
         if self.doc is None:
             print("❌ 错误：没有可保存的文档。")
@@ -79,9 +145,10 @@ class DocFormatter:
             print("\n请选择操作：")
             print("1. 读取文档文件")
             print("2. 基础格式排版（默认格式、冗余清理）")
-            print("3. 进阶自定义操作（节点2开发）")
-            print("4. 保存排版后文档")
-            print("5. 退出系统")
+            print("3. 统计文档字数")
+            print("4. 自定义正文格式")
+            print("5. 保存排版后文档")
+            print("6. 退出系统")
             choice = input("请输入选项序号: ").strip()
 
             if choice == '1':
@@ -89,10 +156,12 @@ class DocFormatter:
             elif choice == '2':
                 self.clean_and_format()
             elif choice == '3':
-                print("💡 提示：进阶功能将在考核节点2中实现。")
+                self.count_words()
             elif choice == '4':
-                self.save_document()
+                self.custom_format()
             elif choice == '5':
+                self.save_document()
+            elif choice == '6':
                 if self.is_modified:
                     confirm = input("⚠️ 文档尚未保存，是否保存后退出？(y/n): ").strip().lower()
                     if confirm == 'y':
@@ -100,7 +169,7 @@ class DocFormatter:
                 print("👋 感谢使用，再见！")
                 break
             else:
-                print("❌ 错误：无效的菜单选项，请输入1-5之间的数字。")
+                print("❌ 错误：无效的菜单选项，请输入1-6之间的数字。")
 
 if __name__ == "__main__":
     app = DocFormatter()
